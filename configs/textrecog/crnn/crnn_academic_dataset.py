@@ -57,7 +57,7 @@ train_pipeline = [
         meta_keys=['filename', 'resize_shape', 'text', 'valid_ratio']),
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', color_type='grayscale'),
+    dict(type='LoadImageFromFile', color_type='color'),
     dict(
         type='ResizeOCR',
         height=32,
@@ -76,8 +76,8 @@ dataset_type = 'OCRDataset'
 
 benchmark_pretrain = dict(
     type='OCRDataset',
-    img_prefix='data/mixture/Syn90k/mnt/ramdisk/max/90kDICT32px',
-    ann_file='data/mixture/Syn90k/label.lmdb',
+    img_prefix='data/recg/images/pretrain',
+    ann_file='data/recg/annotations/pretrain_labels.lmdb',
     loader=dict(
         type='LmdbLoader',
         repeat=1,
@@ -89,8 +89,8 @@ benchmark_pretrain = dict(
 
 benchmark_train = dict(
     type='OCRDataset',
-    img_prefix='data/mixture/Syn90k/mnt/ramdisk/max/90kDICT32px',
-    ann_file='data/mixture/Syn90k/label.lmdb',
+    img_prefix='data/recg/images/train',
+    ann_file='data/recg/annotations/train_labels.lmdb',
     loader=dict(
         type='LmdbLoader',
         repeat=1,
@@ -102,8 +102,8 @@ benchmark_train = dict(
 
 benchmark_val = dict(
     type=dataset_type,
-    img_prefix='',
-    ann_file='',
+    img_prefix='data/recg/images/val',
+    ann_file='data/recg/annotations/val_labels.lmdb',
     loader=dict(
         type='LmdbLoader',
         repeat=1,
@@ -115,8 +115,8 @@ benchmark_val = dict(
 
 benchmark_test = dict(
     type=dataset_type,
-    img_prefix='',
-    ann_file='',
+    img_prefix='data/recg/images/test',
+    ann_file='data/recg/annotations/test.lmdb',
     loader=dict(
         type='LmdbLoader',
         repeat=1,
