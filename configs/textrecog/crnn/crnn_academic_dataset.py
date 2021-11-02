@@ -16,12 +16,12 @@ workflow = [('train', 1)]
 
 # model
 label_convertor = dict(
-    type='CTCConvertor', dict_type='DICT36', with_unknown=False, lower=True)
+    type='CTCConvertor', dict_type='DICT_BENCHMARK', with_unknown=True, lower=False)
 
 model = dict(
     type='CRNNNet',
     preprocessor=None,
-    backbone=dict(type='VeryDeepVgg', leaky_relu=False, input_channels=1),
+    backbone=dict(type='VeryDeepVgg', leaky_relu=False, input_channels=3),
     encoder=None,
     decoder=dict(type='CRNNDecoder', in_channels=512, rnn_flag=True),
     loss=dict(type='CTCLoss'),
@@ -42,12 +42,12 @@ total_epochs = 5
 img_norm_cfg = dict(mean=[127], std=[127])
 
 train_pipeline = [
-    dict(type='LoadImageFromFile', color_type='grayscale'),
+    dict(type='LoadImageFromFile', color_type='color'),
     dict(
         type='ResizeOCR',
         height=32,
-        min_width=100,
-        max_width=100,
+        min_width=128,
+        max_width=128,
         keep_aspect_ratio=False),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='DefaultFormatBundle'),
@@ -74,74 +74,58 @@ test_pipeline = [
 
 dataset_type = 'OCRDataset'
 
-train_img_prefix = 'data/mixture/Syn90k/mnt/ramdisk/max/90kDICT32px'
-train_ann_file = 'data/mixture/Syn90k/label.lmdb'
-
-train1 = dict(
-    type=dataset_type,
-    img_prefix=train_img_prefix,
-    ann_file=train_ann_file,
+benchmark_pretrain = dict(
+    type='OCRDataset',
+    img_prefix='data/mixture/Syn90k/mnt/ramdisk/max/90kDICT32px',
+    ann_file='data/mixture/Syn90k/label.lmdb',
     loader=dict(
         type='LmdbLoader',
         repeat=1,
         parser=dict(
-            type='LineStrParser',
-            keys=['filename', 'text'],
-            keys_idx=[0, 1],
-            separator=' ')),
+            type='LineJsonParser',
+            keys=['filename', 'text'])),
     pipeline=None,
     test_mode=False)
 
-test_prefix = 'data/mixture/'
-
-test_img_prefix1 = test_prefix + 'IIIT5K/'
-test_img_prefix2 = test_prefix + 'svt/'
-test_img_prefix3 = test_prefix + 'icdar_2013/'
-test_img_prefix4 = test_prefix + 'icdar_2015/'
-test_img_prefix5 = test_prefix + 'svtp/'
-test_img_prefix6 = test_prefix + 'ct80/'
-
-test_ann_file1 = test_prefix + 'IIIT5K/test_label.txt'
-test_ann_file2 = test_prefix + 'svt/test_label.txt'
-test_ann_file3 = test_prefix + 'icdar_2013/test_label_1015.txt'
-test_ann_file4 = test_prefix + 'icdar_2015/test_label.txt'
-test_ann_file5 = test_prefix + 'svtp/test_label.txt'
-test_ann_file6 = test_prefix + 'ct80/test_label.txt'
-
-test1 = dict(
-    type=dataset_type,
-    img_prefix=test_img_prefix1,
-    ann_file=test_ann_file1,
+benchmark_train = dict(
+    type='OCRDataset',
+    img_prefix='data/mixture/Syn90k/mnt/ramdisk/max/90kDICT32px',
+    ann_file='data/mixture/Syn90k/label.lmdb',
     loader=dict(
-        type='HardDiskLoader',
+        type='LmdbLoader',
         repeat=1,
         parser=dict(
-            type='LineStrParser',
-            keys=['filename', 'text'],
-            keys_idx=[0, 1],
-            separator=' ')),
+            type='LineJsonParser',
+            keys=['filename', 'text'])),
+    pipeline=None,
+    test_mode=False)
+
+benchmark_val = dict(
+    type=dataset_type,
+    img_prefix='',
+    ann_file='',
+    loader=dict(
+        type='LmdbLoader',
+        repeat=1,
+        parser=dict(
+            type='LineJsonParser',
+            keys=['filename', 'text'])),
     pipeline=None,
     test_mode=True)
 
-test2 = {key: value for key, value in test1.items()}
-test2['img_prefix'] = test_img_prefix2
-test2['ann_file'] = test_ann_file2
+benchmark_test = dict(
+    type=dataset_type,
+    img_prefix='',
+    ann_file='',
+    loader=dict(
+        type='LmdbLoader',
+        repeat=1,
+        parser=dict(
+            type='LineJsonParser',
+            keys=['filename', 'text'])),
+    pipeline=None,
+    test_mode=True)
 
-test3 = {key: value for key, value in test1.items()}
-test3['img_prefix'] = test_img_prefix3
-test3['ann_file'] = test_ann_file3
-
-test4 = {key: value for key, value in test1.items()}
-test4['img_prefix'] = test_img_prefix4
-test4['ann_file'] = test_ann_file4
-
-test5 = {key: value for key, value in test1.items()}
-test5['img_prefix'] = test_img_prefix5
-test5['ann_file'] = test_ann_file5
-
-test6 = {key: value for key, value in test1.items()}
-test6['img_prefix'] = test_img_prefix6
-test6['ann_file'] = test_ann_file6
 
 data = dict(
     samples_per_gpu=64,
@@ -150,15 +134,15 @@ data = dict(
     test_dataloader=dict(samples_per_gpu=1),
     train=dict(
         type='UniformConcatDataset',
-        datasets=[train1],
+        datasets=[benchmark_pretrain, benchmark_train],
         pipeline=train_pipeline),
     val=dict(
         type='UniformConcatDataset',
-        datasets=[test1, test2, test3, test4, test5, test6],
+        datasets=[benchmark_val],
         pipeline=test_pipeline),
     test=dict(
         type='UniformConcatDataset',
-        datasets=[test1, test2, test3, test4, test5, test6],
+        datasets=[benchmark_test],
         pipeline=test_pipeline))
 
 evaluation = dict(interval=1, metric='acc')
