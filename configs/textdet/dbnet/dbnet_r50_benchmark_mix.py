@@ -117,6 +117,13 @@ data = dict(
         type=dataset_type,
         ann_file=data_root + '/annotations/val_labels.json',
         img_prefix=data_root + '/images',
+        loader=dict(
+            type='HardDiskLoader',
+            repeat=1,
+            parser=dict(
+                type='LineJsonParser',
+                keys=['file_name', 'height', 'width', 'annotations'])
+        ),
         # select_first_k=100,
         pipeline=test_pipeline,
         test_mode=True),
@@ -124,6 +131,13 @@ data = dict(
         type=dataset_type,
         ann_file=data_root + '/annotations/test_labels.json',
         img_prefix=data_root + '/images',
+        loader=dict(
+            type='HardDiskLoader',
+            repeat=1,
+            parser=dict(
+                type='LineJsonParser',
+                keys=['file_name', 'height', 'width', 'annotations'])
+        ),
         # select_first_k=100,
         pipeline=test_pipeline,
         test_mode=True)
