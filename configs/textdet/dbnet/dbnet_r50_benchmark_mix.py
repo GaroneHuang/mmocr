@@ -1,7 +1,26 @@
-# _base_ = [
-#     '../../_base_/schedules/schedule_1200e.py', '../../_base_/runtime_10e.py'
-# ]
-# load_from = 'checkpoints/textdet/dbnet/res50dcnv2_synthtext.pth'
+_base_ = []
+
+checkpoint_config = dict(interval=1)
+# yapf:disable
+log_config = dict(
+    interval=1,
+    hooks=[
+        dict(type='TextLoggerHook')
+        # dict(type='TensorboardLoggerHook')
+    ])
+# yapf:enable
+dist_params = dict(backend='nccl')
+log_level = 'INFO'
+load_from = None
+resume_from = None
+workflow = [('train', 1)]
+
+# optimizer
+optimizer = dict(type='SGD', lr=0.007, momentum=0.9, weight_decay=0.0001)
+optimizer_config = dict(grad_clip=None)
+# learning policy
+lr_config = dict(policy='poly', power=0.9, min_lr=1e-7, by_epoch=True)
+total_epochs = 10
 
 model = dict(
     type='DBNet',
@@ -112,3 +131,5 @@ data = dict(
     #     pipeline=test_pipeline)
     )
 # evaluation = dict(interval=100, metric='hmean-iou')
+
+cudnn_benchmark = True
