@@ -1,7 +1,7 @@
-_base_ = [
-    '../../_base_/schedules/schedule_1200e.py', '../../_base_/runtime_10e.py'
-]
-load_from = 'checkpoints/textdet/dbnet/res50dcnv2_synthtext.pth'
+# _base_ = [
+#     '../../_base_/schedules/schedule_1200e.py', '../../_base_/runtime_10e.py'
+# ]
+# load_from = 'checkpoints/textdet/dbnet/res50dcnv2_synthtext.pth'
 
 model = dict(
     type='DBNet',
@@ -27,8 +27,8 @@ model = dict(
     train_cfg=None,
     test_cfg=None)
 
-dataset_type = 'IcdarDataset'
-data_root = 'data/icdar2015/'
+dataset_type = 'TextDetDataset'
+data_root = '../mmocr_datasets/det'
 # img_norm_cfg = dict(
 #    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 # from official dbnet code
@@ -51,10 +51,10 @@ train_pipeline = [
     # img aug
     dict(
         type='ImgAug',
-        args=[['Fliplr', 0.5],
-              dict(cls='Affine', rotate=[-10, 10]), ['Resize', [0.5, 3.0]]]),
+        args=[['Resize', {'shorter-side':[600, 672, 704, 736, 768, 800, 832, 864, 896], 'longer-side':1600}],
+              dict(cls='Affine', rotate=[-10, 10])]),
     # random crop
-    dict(type='EastRandomCrop', target_size=(640, 640)),
+    dict(type='EastRandomCrop', target_size=(736, 736)),
     dict(type='DBNetTargets', shrink_ratio=0.4),
     dict(type='Pad', size_divisor=32),
     # for visualizing img and gts, pls set visualize = True
@@ -66,42 +66,49 @@ train_pipeline = [
         type='Collect',
         keys=['img', 'gt_shrink', 'gt_shrink_mask', 'gt_thr', 'gt_thr_mask'])
 ]
-test_pipeline = [
-    dict(type='LoadImageFromFile', color_type='color_ignore_orientation'),
-    dict(
-        type='MultiScaleFlipAug',
-        img_scale=(4068, 1024),
-        flip=False,
-        transforms=[
-            dict(type='Resize', img_scale=(4068, 1024), keep_ratio=True),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
-        ])
-]
+# test_pipeline = [
+#     dict(type='LoadImageFromFile', color_type='color_ignore_orientation'),
+#     dict(
+#         type='MultiScaleFlipAug',
+#         img_scale=(4068, 1024),
+#         flip=False,
+#         transforms=[
+#             dict(type='Resize', img_scale=(4068, 1024), keep_ratio=True),
+#             dict(type='Normalize', **img_norm_cfg),
+#             dict(type='Pad', size_divisor=32),
+#             dict(type='ImageToTensor', keys=['img']),
+#             dict(type='Collect', keys=['img']),
+#         ])
+# ]
 data = dict(
     samples_per_gpu=8,
-    workers_per_gpu=4,
-    val_dataloader=dict(samples_per_gpu=1),
-    test_dataloader=dict(samples_per_gpu=1),
+    workers_per_gpu=8,
+    # val_dataloader=dict(samples_per_gpu=1),
+    # test_dataloader=dict(samples_per_gpu=1),
     train=dict(
         type=dataset_type,
-        ann_file=data_root + '/instances_training.json',
-        # for debugging top k imgs
-        # select_first_k=200,
-        img_prefix=data_root + '/imgs',
-        pipeline=train_pipeline),
-    val=dict(
-        type=dataset_type,
-        ann_file=data_root + '/instances_test.json',
-        img_prefix=data_root + '/imgs',
-        # select_first_k=100,
-        pipeline=test_pipeline),
-    test=dict(
-        type=dataset_type,
-        ann_file=data_root + '/instances_test.json',
-        img_prefix=data_root + '/imgs',
-        # select_first_k=100,
-        pipeline=test_pipeline))
-evaluation = dict(interval=100, metric='hmean-iou')
+        ann_file=data_root + '/annotations/mix_labels.json',
+        img_prefix=data_root + '/images',
+        loader=dict(
+            type='HardDiskLoader',
+            repeat=1,
+            parser=dict(
+                type='LineJsonParser',
+                keys=['file_name', 'height', 'width', 'annotations'])
+        ),
+        pipeline=train_pipeline,
+        test_mode=False),
+    # val=dict(
+    #     type=dataset_type,
+    #     ann_file=data_root + '/instances_test.json',
+    #     img_prefix=data_root + '/imgs',
+    #     # select_first_k=100,
+    #     pipeline=test_pipeline),
+    # test=dict(
+    #     type=dataset_type,
+    #     ann_file=data_root + '/instances_test.json',
+    #     img_prefix=data_root + '/imgs',
+    #     # select_first_k=100,
+    #     pipeline=test_pipeline)
+    )
+# evaluation = dict(interval=100, metric='hmean-iou')
