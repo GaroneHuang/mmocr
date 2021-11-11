@@ -263,7 +263,8 @@ class ScaleAspectJitter(Resize):
                  aspect_ratio_range=None,
                  long_size_bound=None,
                  short_size_bound=None,
-                 scale_range=None):
+                 long_side_range=None,
+                 short_side_range=None):
         super().__init__(
             img_scale=img_scale,
             multiscale_mode=multiscale_mode,
@@ -280,9 +281,11 @@ class ScaleAspectJitter(Resize):
             assert aspect_ratio_range is None
             assert short_size_bound is None
             assert long_size_bound is None
-            assert scale_range is not None
+            assert long_side_range is not None
+            assert short_side_range is not None
         else:
-            assert scale_range is None
+            assert long_side_range is None
+            assert short_side_range is None
             assert isinstance(ratio_range, tuple)
             assert isinstance(aspect_ratio_range, tuple)
             assert check_argument.equal_len(ratio_range, aspect_ratio_range)
@@ -294,25 +297,36 @@ class ScaleAspectJitter(Resize):
         self.aspect_ratio_range = aspect_ratio_range
         self.long_size_bound = long_size_bound
         self.short_size_bound = short_size_bound
-        self.scale_range = scale_range
+        self.long_side_range = long_side_range
+        self.short_side_range = short_side_range
 
     @staticmethod
     def sample_from_range(range):
-        assert len(range) == 2
-        min_value, max_value = min(range), max(range)
-        value = np.random.random_sample() * (max_value - min_value) + min_value
-
+        # assert len(range) == 2
+        # if len(range) == 2:
+        #     min_value, max_value = min(range), max(range)
+        #     value = np.random.random_sample() * (max_value - min_value) + min_value
+        # else:
+        value = np.random.choice(range)
         return value
 
     def _random_scale(self, results):
-
+        h, w = results['img'].shape[0:2]
         if self.resize_type == 'indep_sample_in_range':
-            w = self.sample_from_range(self.scale_range)
-            h = self.sample_from_range(self.scale_range)
-            results['scale'] = (int(w), int(h))  # (w,h)
+            # w = self.sample_from_range(self.scale_range)
+            # h = self.sample_from_range(self.scale_range)
+            # results['scale'] = (int(w), int(h))  # (w,h)
+            # results['scale_idx'] = None
+            # return
+            if w > h:
+                w = self.sample_from_range(self.long_side_range)
+                h = self.sample_from_range(self.short_side_range)
+            else:
+                w = self.sample_from_range(self.short_side_range)
+                h = self.sample_from_range(self.long_side_range)
+            results['scale'] = (int(w), int(h))
             results['scale_idx'] = None
             return
-        h, w = results['img'].shape[0:2]
         if self.resize_type == 'long_short_bound':
             scale1 = 1
             if max(h, w) > self.long_size_bound:
